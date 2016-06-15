@@ -16,7 +16,8 @@ REQUIREMENTS = [
     'b3j0f.conf>=0.3.18',
     'link.middleware>=0.10',
     'link.kvstore>=0.2',
-    'six>=1.10.0'
+    'six>=1.10.0',
+    'riak>=2.5.3'
 ]
 
 CLASSIFIERS = [
