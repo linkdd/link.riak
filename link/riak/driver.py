@@ -14,6 +14,7 @@ import riak
     conf=category(
         'RIAK',
         Parameter(name='default_bucket', value='default'),
+        Parameter(name='indexing', ptype=bool, value=False),
         Parameter(name='protocol', value='http'),
         Parameter(name='pkey'),
         Parameter(name='cert'),
@@ -30,6 +31,7 @@ class RiakDriver(Driver):
     def __init__(
         self,
         default_bucket=None,
+        indexing=False,
         protocol=None,
         pkey=None,
         cert=None,
@@ -42,6 +44,7 @@ class RiakDriver(Driver):
         super(RiakDriver, self).__init__(*args, **kwargs)
 
         self.default_bucket = default_bucket
+        self.indexing = indexing
         self.protocol = protocol
         self.pkey = pkey
         self.cert = cert
@@ -151,8 +154,9 @@ class RiakDriver(Driver):
     def _put(self, conn, key, val):
         obj = self._get_bucket(conn).new(key, val)
 
-        for indexkey, indexval in self._get_indexes(val):
-            obj.add_index(indexkey, indexval)
+        if self.indexing:
+            for indexkey, indexval in self._get_indexes(val):
+                obj.add_index(indexkey, indexval)
 
         obj.store()
 
@@ -162,8 +166,9 @@ class RiakDriver(Driver):
         if not obj.exists:
             raise KeyError('No such key: {0}'.format(key))
 
-        for indexkey, indexval in self._get_indexes(obj.data):
-            obj.remove_index(indexkey, indexval)
+        if self.indexing:
+            for indexkey, indexval in self._get_indexes(obj.data):
+                obj.remove_index(indexkey, indexval)
 
         obj.delete()
 
