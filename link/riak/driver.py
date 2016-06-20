@@ -103,6 +103,12 @@ class RiakDriver(Driver):
 
         return riak.RiakClient(nodes=nodes, credentials=security)
 
+    def _disconnect(self, conn):
+        conn.close()
+
+    def _isconnected(self, conn):
+        return conn is not None and conn.is_alive()
+
     def _get_bucket(self, conn):
         if len(self.path) == 0:
             bucket = conn.bucket(self.default_bucket)
