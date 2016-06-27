@@ -5,7 +5,7 @@ from link.kvstore.driver import Driver
 
 from link.riak import CONF_BASE_PATH
 
-from six import string_types
+from six import string_types, raise_from
 import riak
 
 
@@ -149,6 +149,15 @@ class RiakDriver(Driver):
 
         return pairs
 
+    def _new_object(self, conn, key, val):
+        obj = self._get_bucket(conn).new(key, val)
+
+        if self.indexing:
+            for indexkey, indexval in self._get_indexes(val):
+                obj.add_index(indexkey, indexval)
+
+        return obj
+
     def _get(self, conn, key):
         obj = self._get_bucket(conn).get(key)
 
@@ -157,14 +166,54 @@ class RiakDriver(Driver):
 
         return obj.data
 
+    def _multiget(self, conn, keys):
+        bucket = self._get_bucket(conn)
+
+        results = bucket.multiget(keys)
+
+        datas = []
+
+        for result in results:
+            if isinstance(result, riak.RiakObject):
+                datas.append(result.data)
+
+            elif isinstance(result, riak.datatypes.Datatype):
+                doc = {}
+
+                for subkey, type_subkey in result.value:
+                    dockey = '{0}_{1}'.format(subkey, type_subkey)
+                    val = result.value[(subkey, type_subkey)]
+
+                    if isinstance(val, frozenset):
+                        val = list(val)
+
+                    else:
+                        val = str(val)
+
+                    doc[dockey] = val
+
+                datas.append(doc)
+
+            else:
+                _, _, key, err = result
+
+                raise_from(
+                    KeyError('No such key: {0}'.format(key)),
+                    err
+                )
+
+        return datas
+
     def _put(self, conn, key, val):
-        obj = self._get_bucket(conn).new(key, val)
-
-        if self.indexing:
-            for indexkey, indexval in self._get_indexes(val):
-                obj.add_index(indexkey, indexval)
-
+        obj = self._new_object(conn, key, val)
         obj.store()
+
+    def _multiput(self, conn, keys, vals):
+        objs = [
+            self._new_object(conn, k, v)
+            for k, v in zip(keys, vals)
+        ]
+        conn.multiput(objs)
 
     def _remove(self, conn, key):
         obj = self._get_bucket(conn).get(key)
