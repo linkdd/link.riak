@@ -1,5 +1,5 @@
 link.riak
-============
+=========
 
 **link.riak** provides a key/value store driver for Riak.
 
