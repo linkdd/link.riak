@@ -53,6 +53,30 @@ class solr:
         def _fdel(self, obj):
             delattr(obj, self.attr)
 
+    class EmbeddedModelField(BaseField):
+        def __init__(self, members, *args, **kwargs):
+            super(solr.EmbeddedModelField, self).__init__(*args, **kwargs)
+
+            self.cls = create_model_class(
+                'EmbeddedModel_{0}'.format(self.name),
+                (Model,),
+                members
+            )
+
+        def convert_value(self, val):
+            if not isinstance(val, self.cls):
+                raise TypeError('{0} must be an embedded model: {1}'.format(
+                    self.name,
+                    self.cls.__name__
+                ))
+
+            return val
+
+        def setdefault(self, obj):
+            result = self.cls(obj.middleware)
+            setattr(obj, self.attr, result)
+            return result
+
     class TrieIntField(BaseField):
         def convert_value(self, val):
             if not isinstance(val, int):
@@ -150,6 +174,21 @@ class RiakSolrSchema(ModelFeature):
 
     DATA_ID = '_yz_rk'
 
+    def _get_member(self, typemapping, field):
+        ftype, typeattr = typemapping.get(field.get('type'))
+        fattr = deepcopy(field.attrib)
+        fattr.update(typeattr)
+
+        isarray = (field.get('multiValued', 'false') == 'true')
+
+        if isarray:
+            member = solr.ArrayField(ftype, fattr)
+
+        else:
+            member = ftype(fattr)
+
+        return member
+
     def create_model(self, schema):
         root = ET.fromstring(schema)
 
@@ -171,16 +210,39 @@ class RiakSolrSchema(ModelFeature):
 
         for field in root.iter('field'):
             fname = field.get('name')
-            ftype, typeattr = typemapping.get(field.get('type'))
-            fattr = deepcopy(field.attrib)
-            fattr.update(typeattr)
+            fnames = fname.split('.')
 
-            isarray = (field.get('multiValued', 'false') == 'true')
-
-            if isarray:
-                clsmembers[fname] = solr.ArrayField(ftype, attr)
+            if len(fnames) == 1:
+                clsmembers[fname] = self._get_member(typemapping, field)
 
             else:
-                clsmembers[fname] = ftype(fattr)
+                tree = clsmembers
 
-        return type(clsname, clsbases, clsmembers)
+                for name in fnames[:-1]:
+                    if name not in tree:
+                        tree[name] = {}
+
+                    tree = tree[name]
+
+                tree[fnames[-1]] = self._get_member(typemapping, field)
+
+        return create_model_class(clsname, clsbases, clsmembers)
+
+
+def create_model_class(name, bases, members):
+    clsmembers = {}
+
+    for mname in members:
+        member = members[mname]
+
+        if isinstance(member, dict):
+            member = solr.EmbeddedModelField(
+                member,
+                {
+                    'name': mname
+                }
+            )
+
+        clsmembers[mname] = member
+
+    return type(name, bases, clsmembers)
