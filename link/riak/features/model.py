@@ -4,6 +4,7 @@ from b3j0f.utils.iterable import isiterable
 from b3j0f.aop import weave, get_advices
 from b3j0f.conf import Configurable
 
+from riak.datatypes import Register, Map, Counter, Flag, Set
 from xml.etree import ElementTree as ET
 from six import string_types
 from copy import deepcopy
@@ -21,6 +22,36 @@ class solr:
         @property
         def attr(self):
             return '_{0}'.format(self._attr['name'])
+
+        @property
+        def isregister(self):
+            return self.name.endswith('_register')
+
+        @property
+        def ismap(self):
+            return self.name.endswith('_map')
+
+        @property
+        def iscounter(self):
+            return self.name.endswith('_counter')
+
+        @property
+        def isflag(self):
+            return self.name.endswith('_flag')
+
+        @property
+        def isset(self):
+            return self.name.endswith('_set')
+
+        @property
+        def is_datatype(self):
+            return any([
+                self.isregister,
+                self.ismap,
+                self.iscounter,
+                self.isflag,
+                self.isset
+            ])
 
         def __init__(self, attributes, *args, **kwargs):
             kwargs['fget'] = self._fget
@@ -44,11 +75,66 @@ class solr:
             except AttributeError:
                 result = self.setdefault(obj)
 
+            if self.isregister:
+                if not isinstance(result, Register):
+                    result = Register(value=result)
+
+            elif self.ismap:
+                if not isinstance(result, Map):
+                    raise NotImplementedError()
+
+            elif self.iscounter:
+                if not isinstance(result, Counter):
+                    result = Counter(value=result)
+
+            elif self.isflag:
+                if not isinstance(result, Flag):
+                    result = Flag(value=result)
+
+            elif self.isset:
+                if not isinstance(result, Set):
+                    result = Set(value=frozenset(result))
+
             return result
 
         def _fset(self, obj, val):
             val = self.convert_value(val)
-            setattr(obj, self.attr, val)
+
+            if self.is_datatype:
+                dt = self._fget(obj)
+
+                if self.isregister:
+                    dt.assign(val)
+
+                elif self.ismap:
+                    raise NotImplementedError()
+
+                elif self.iscounter:
+                    v = val - dt.value
+
+                    if v >= 0:
+                        dt.increment(v)
+
+                    else:
+                        dt.decrement(v)
+
+                elif self.isflag:
+                    if v:
+                        dt.enable()
+
+                    else:
+                        dt.disable()
+
+                elif self.isset:
+                    for item in val:
+                        if item not in dt.value:
+                            dt.add(item)
+
+                        else:
+                            dt.discard(item)
+
+            else:
+                setattr(obj, self.attr, val)
 
         def _fdel(self, obj):
             delattr(obj, self.attr)
