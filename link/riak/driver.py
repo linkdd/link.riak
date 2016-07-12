@@ -3,7 +3,8 @@
 from b3j0f.conf import Configurable, category, Parameter
 from link.kvstore.driver import Driver
 
-from link.riak.feature import RiakSearch2
+from link.riak.features.fulltext import RiakSearch2
+from link.riak.features.model import RiakSolrSchema
 from link.riak import CONF_BASE_PATH
 
 from six import string_types, raise_from
@@ -27,7 +28,7 @@ import riak
 )
 class RiakDriver(Driver):
 
-    __features__ = [RiakSearch2]
+    __features__ = [RiakSearch2, RiakSolrSchema]
     __protocols__ = ['riak']
 
     def __init__(
