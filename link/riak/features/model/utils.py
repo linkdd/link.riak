@@ -26,48 +26,46 @@ def get_member(typemapping, field):
     return member
 
 
-def model_to_map(model, dt=None):
-    if dt is None:
-        dt = Map()
-
-    for key in model:
-        if key.endswith('_register'):
-            dtkey = key[:-len('_register')]
-            dt.registers[dtkey] = model[key]
-
-        elif key.endswith('_set'):
-            dtkey = key[:-len('_set')]
-            dt.sets[dtkey] = model[key]
-
-        elif key.endswith('_flag'):
-            dtkey = key[:-len('_flag')]
-            dt.flags[dtkey] = model[key]
-
-        elif key.endswith('_counter'):
-            dtkey = key[:-len('_counter')]
-            dt.counters[dtkey] = model[key]
-
-        elif key.endswith('_map'):
-            dtkey = key[:-len('_map')]
-            dt.maps[dtkey] = model[key].to_map()
-
-    return dt
+def model_to_map(model, _map):
+    raise NotImplementedError()
 
 
 def model_save(model):
-    riak_map = model.to_map()
-    riak_map = model._middleware.conn.update_datatype(riak_map)
-    model.to_map(riak_map)
+    model._map.key = model[model._DATA_ID] if model._DATA_ID in model else None
+
+    try:
+        model._middleware.conn.update_datatype(model._map)
+
+    except ValueError:  # No operation to send
+        pass
+
+    else:
+        model[model._DATA_ID] = model._map.key
 
 
 def model_delete(model):
-    riak_map = model.to_map()
-    model._middleware.conn.delete(riak_map)
+    model._middleware.conn.delete(model._map)
+
+    if model._DATA_ID in model:
+        del model[model._DATA_ID]
 
 
 def create_model_class(name, bases, members):
+    def model_init(model, *args, **kwargs):
+        for base in bases:
+            base.__init__(model, *args, **kwargs)
+
+        model._map = Map(
+            bucket=model._middleware.conn.bucket_type(
+                '{0}s'.format(model._schemaname)
+            ).bucket(
+                'default'
+            )
+        )
+
     clsmembers = {
         '_DATA_ID': '_yz_rk',
+        '__init__': model_init,
         'to_map': model_to_map,
         'save': model_save,
         'delete': model_delete

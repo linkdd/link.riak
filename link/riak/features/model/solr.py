@@ -48,6 +48,27 @@ class BaseField(property):
             self.isset
         ])
 
+    @property
+    def dtkey(self):
+        result = self.name
+
+        if self.isregister:
+            result = result[:-len('_register')]
+
+        elif self.ismap:
+            result = result[:-len('_map')]
+
+        elif self.iscounter:
+            result = result[:-len('_counter')]
+
+        elif self.isflag:
+            result = result[:-len('_flag')]
+
+        elif self.isset:
+            result = result[:-len('_set')]
+
+        return result
+
     def __init__(self, attributes, *args, **kwargs):
         kwargs['fget'] = self._fget
         kwargs['fset'] = self._fset
@@ -72,23 +93,38 @@ class BaseField(property):
 
         if self.isregister:
             if not isinstance(result, Register):
-                result = Register(value=result)
+                obj._map.registers[self.dtkey].assign(result)
+                result = obj._map.registers[self.dtkey]
 
         elif self.ismap:
-            if not isinstance(result, Map):
-                result = result.to_map()
+            result.to_map(obj._map.maps[self.dtkey])
 
         elif self.iscounter:
             if not isinstance(result, Counter):
-                result = Counter(value=result)
+                if result >= 0:
+                    obj._map.counters[self.dtkey].increment(result)
+
+                else:
+                    obj._map.counters[self.dtkey].decrement(-result)
+
+                result = obj._map.counters[self.dtkey]
 
         elif self.isflag:
             if not isinstance(result, Flag):
-                result = Flag(value=result)
+                if result:
+                    obj._map.flags[self.dtkey].enable()
+
+                else:
+                    obj._map.flags[self.dtkey].disable()
+
+                result = obj._map.flags[self.dtkey]
 
         elif self.isset:
             if not isinstance(result, Set):
-                result = Set(value=frozenset(result))
+                for item in result:
+                    obj._map.sets[self.dtkey].add(item)
+
+                result = obj._map.sets[self.dtkey]
 
         return result
 
@@ -102,13 +138,13 @@ class BaseField(property):
                 dt.assign(val)
 
             elif self.iscounter:
-                v = val - dt.value
+                v = val - (dt.value + dt._increment)
 
                 if v >= 0:
                     dt.increment(v)
 
                 else:
-                    dt.decrement(v)
+                    dt.decrement(-v)
 
             elif self.isflag:
                 if v:
@@ -126,13 +162,23 @@ class BaseField(property):
                         dt.discard(item)
 
             elif self.ismap:
-                val.to_map(dt)
+                dt.to_map(obj._map.maps[self.dtkey])
 
-        else:
-            setattr(obj, self.attr, val)
+            val = dt
+
+        setattr(obj, self.attr, val)
 
     def _fdel(self, obj):
-        delattr(obj, self.attr)
+        if self.is_datatype:
+            if self.ismap:
+                obj._map.maps[self.dtkey].delete()
+
+            else:
+                dt = self._fget(obj)
+                dt.delete()
+
+        else:
+            delattr(obj, self.attr)
 
 
 class EmbeddedModelField(BaseField):
@@ -155,7 +201,7 @@ class EmbeddedModelField(BaseField):
         return val
 
     def setdefault(self, obj):
-        result = self.cls(obj.middleware)
+        result = self.cls(obj._middleware, '')
         setattr(obj, self.attr, result)
         return result
 
