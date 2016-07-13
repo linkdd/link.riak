@@ -56,17 +56,18 @@ def model_to_map(model, dt=None):
 
 def model_save(model):
     riak_map = model.to_map()
-    riak_map = model.middleware.conn.update_datatype(riak_map)
+    riak_map = model._middleware.conn.update_datatype(riak_map)
     model.to_map(riak_map)
 
 
 def model_delete(model):
     riak_map = model.to_map()
-    model.middleware.conn.delete(riak_map)
+    model._middleware.conn.delete(riak_map)
 
 
 def create_model_class(name, bases, members):
     clsmembers = {
+        '_DATA_ID': '_yz_rk',
         'to_map': model_to_map,
         'save': model_save,
         'delete': model_delete
