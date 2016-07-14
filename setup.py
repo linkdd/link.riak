@@ -21,7 +21,7 @@ REQUIREMENTS = [
     'link.fulltext>=0.4',
     'link.model>=0.5',
     'six>=1.10.0',
-    'riak>=2.5.3'
+    'riak>=2.5.5'
 ]
 
 CLASSIFIERS = [
