@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from b3j0f.conf import Configurable, category, Parameter
+
+from link.middleware.core import register_middleware
 from link.kvstore.driver import Driver
 
 from link.riak.features.model.core import RiakSolrSchema
 from link.riak.features.fulltext import RiakSearch2
+from link.feature import addfeatures
 from link.riak import CONF_BASE_PATH
 
 from six import string_types, raise_from
@@ -26,9 +29,10 @@ import riak
         Parameter(name='sslver', ptype=int)
     )
 )
+@addfeatures([RiakSolrSchema, RiakSearch2])
+@register_middleware
 class RiakDriver(Driver):
 
-    __features__ = [RiakSearch2, RiakSolrSchema]
     __protocols__ = ['riak']
 
     def __init__(
