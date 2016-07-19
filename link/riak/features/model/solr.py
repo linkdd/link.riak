@@ -97,7 +97,7 @@ class BaseField(property):
                 result = obj._map.registers[self.dtkey]
 
         elif self.ismap:
-            result.to_map(obj._map.maps[self.dtkey])
+            pass
 
         elif self.iscounter:
             if not isinstance(result, Counter):
@@ -162,7 +162,7 @@ class BaseField(property):
                         dt.discard(item)
 
             elif self.ismap:
-                dt.to_map(obj._map.maps[self.dtkey])
+                raise AttributeError('Cannot set map attributes')
 
             val = dt
 
@@ -201,7 +201,10 @@ class EmbeddedModelField(BaseField):
         return val
 
     def setdefault(self, obj):
-        result = self.cls(obj._middleware, '')
+        result = self.cls(
+            obj._middleware, '',
+            model_map=obj._map.maps[self.dtkey]
+        )
         setattr(obj, self.attr, result)
         return result
 

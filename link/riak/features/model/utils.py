@@ -26,10 +26,6 @@ def get_member(typemapping, field):
     return member
 
 
-def model_to_map(model, _map):
-    raise NotImplementedError()
-
-
 def model_save(model):
     model._map.key = model[model._DATA_ID] if model._DATA_ID in model else None
 
@@ -51,22 +47,24 @@ def model_delete(model):
 
 
 def create_model_class(name, bases, members):
-    def model_init(model, *args, **kwargs):
+    def model_init(model, model_map=None, *args, **kwargs):
         for base in bases:
             base.__init__(model, *args, **kwargs)
 
-        model._map = Map(
-            bucket=model._middleware.conn.bucket_type(
-                '{0}s'.format(model._schemaname)
-            ).bucket(
-                'default'
+        if model_map is None:
+            model_map = Map(
+                bucket=model._middleware.conn.bucket_type(
+                    '{0}s'.format(model._schemaname)
+                ).bucket(
+                    'default'
+                )
             )
-        )
+
+        model._map = model_map
 
     clsmembers = {
         '_DATA_ID': '_yz_rk',
         '__init__': model_init,
-        'to_map': model_to_map,
         'save': model_save,
         'delete': model_delete
     }
