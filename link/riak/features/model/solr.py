@@ -2,7 +2,6 @@
 
 from riak.datatypes import Register, Counter, Flag, Set
 from b3j0f.utils.iterable import isiterable
-from b3j0f.aop import weave, get_advices
 from six import string_types
 
 from link.riak.features.model.utils import create_model_class
