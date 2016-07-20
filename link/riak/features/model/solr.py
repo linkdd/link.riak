@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from riak.datatypes import Register, Map, Counter, Flag, Set
+from riak.datatypes import Register, Counter, Flag, Set
 from b3j0f.utils.iterable import isiterable
 from b3j0f.aop import weave, get_advices
 from six import string_types
@@ -138,16 +138,14 @@ class BaseField(property):
                 dt.assign(val)
 
             elif self.iscounter:
-                v = val - (dt.value + dt._increment)
-
-                if v >= 0:
-                    dt.increment(v)
+                if val >= 0:
+                    dt.increment(val)
 
                 else:
-                    dt.decrement(-v)
+                    dt.decrement(-val)
 
             elif self.isflag:
-                if v:
+                if val:
                     dt.enable()
 
                 else:
@@ -155,11 +153,14 @@ class BaseField(property):
 
             elif self.isset:
                 for item in val:
-                    if item not in dt.value:
-                        dt.add(item)
+                    if item[0] == '-':
+                        dt.discard(item[1:])
 
                     else:
-                        dt.discard(item)
+                        if item[0] == '+':
+                            item = item[1:]
+
+                        dt.add(item)
 
             elif self.ismap:
                 raise AttributeError('Cannot set map attributes')
@@ -249,49 +250,48 @@ class StrField(BaseField):
 
 
 class ArrayField(BaseField):
+
+    class array(list):
+        def append(self, item):
+            item = self.__subtype__.convert_value(item)
+            return super(ArrayField.array, self).append(item)
+
+        def extend(self, l):
+            L = [
+                self.__subtype__.convert_value(item)
+                for item in l
+            ]
+
+            return super(ArrayField.array, self).extend(L)
+
+        def insert(self, i, item):
+            item = self.__subtype__.convert_value(item)
+
+            return super(ArrayField.array, self).insert(i, item)
+
+        def remove(self, item):
+            item = self.__subtype__.convert_value(item)
+            return super(ArrayField.array, self).remove(item)
+
+        def __setitem__(self, i, item):
+            item = self.__subtype__.convert_value(item)
+
+            return super(ArrayField.array, self).__setitem__(i, item)
+
     def __init__(self, subtype, *args, **kwargs):
         super(ArrayField, self).__init__(*args, **kwargs)
 
         self.subtype = subtype(self.attr)
 
-    def ensure_type_append(self, jointpoint):
-        args = list(jointpoint.args)
-        args[0] = self.subtype.convert_value(args[0])
-        jointpoint.args = tuple(args)
-
-        return jointpoint.proceed()
-
-    def ensure_type_extend(self, jointpoint):
-        L = jointpoint.args[0]
-
-        for i, item in enumerate(L):
-            L[i] = self.subtype.convert_value(item)
-
-        return jointpoint.proceed()
-
-    def ensure_type_insert(self, jointpoint):
-        args = list(jointpoint)
-        args[1] = self.subtype.convert_value(args[1])
-        jointpoint.args = tuple(args)
-
-        return jointpoint.proceed()
-
-    def weave_list(self, val):
-        methods = [
-            (val.append, self.ensure_type_append),
-            (val.extend, self.ensure_type_extend),
-            (val.insert, self.ensure_type_insert),
-            (val.remove, self.ensure_type_append),
-            (val.__setitem__, self.ensure_type_insert)
-        ]
-
-        for method, advice in methods:
-            if advice not in get_advices(method):
-                weave(target=method, advices=advice)
+    def override_list(self, val):
+        val.__class__ = ArrayField.array
+        val.__subtype__ = self.subtype
 
     def setdefault(self, obj):
-        result = []
-        self.weave_list(result)
+        result = ArrayField.array()
+        result.__subtype__ = self.subtype
+
+        self.override_list(result)
         setattr(obj, self.attr, result)
         return result
 
@@ -299,6 +299,8 @@ class ArrayField(BaseField):
         if not isiterable(val, exclude=string_types):
             val = [val]
 
-        self.weave_list(val)
+        if not isinstance(val, ArrayField.array):
+            result = ArrayField.array(val)
+            result.__subtype__ = self.subtype
 
-        return val
+        return result

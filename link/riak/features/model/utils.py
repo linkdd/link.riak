@@ -30,30 +30,35 @@ def model_save(model):
     model._map.key = model[model._DATA_ID] if model._DATA_ID in model else None
 
     try:
-        model._middleware.conn.update_datatype(model._map)
+        model._obj.conn.update_datatype(model._map)
 
     except ValueError:  # No operation to send
-        pass
+        print('No operation to send')
 
     else:
+        model._map.reload()
         model[model._DATA_ID] = model._map.key
+
+        for propname in model:
+            prop = getattr(model.__class__, propname)
+            delattr(model, prop.attr)
 
 
 def model_delete(model):
-    model._middleware.conn.delete(model._map)
+    model._obj.conn.delete(model._map)
 
     if model._DATA_ID in model:
         del model[model._DATA_ID]
 
 
 def create_model_class(name, bases, members):
-    def model_init(model, model_map=None, *args, **kwargs):
+    def model_init(model, schemaname, obj, model_map=None, *args, **kwargs):
         for base in bases:
-            base.__init__(model, *args, **kwargs)
+            base.__init__(model, schemaname, obj, *args, **kwargs)
 
         if model_map is None:
             model_map = Map(
-                bucket=model._middleware.conn.bucket_type(
+                bucket=model._obj.conn.bucket_type(
                     '{0}s'.format(model._schemaname)
                 ).bucket(
                     'default'
@@ -61,6 +66,10 @@ def create_model_class(name, bases, members):
             )
 
         model._map = model_map
+
+        if model._DATA_ID in model:
+            model._map.key = model[model._DATA_ID]
+            model._map.reload()
 
     clsmembers = {
         '_DATA_ID': '_yz_rk',

@@ -5,6 +5,6 @@ link.feature==2.0
 link.middleware==1.4
 link.kvstore==0.10
 link.fulltext==0.6
-link.model==0.8
+link.model==0.9
 six==1.10.0
 riak==2.5.5
