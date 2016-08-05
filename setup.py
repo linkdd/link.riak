@@ -15,11 +15,11 @@ LICENSE = 'MIT'
 REQUIREMENTS = [
     'b3j0f.conf>=0.3.18',
     'b3j0f.utils>=1.4.3',
+    'link.crdt>=0.4',
     'link.feature>=2.0',
     'link.middleware>=1.4',
     'link.kvstore>=0.10',
     'link.fulltext>=0.6',
-    'link.model>=0.9',
     'six>=1.10.0',
     'riak>=2.5.5'
 ]

@@ -5,12 +5,16 @@ from b3j0f.conf import Configurable, category, Parameter
 from link.middleware.core import register_middleware
 from link.kvstore.driver import Driver
 
-from link.riak.features.model.core import RiakSolrSchema
-from link.riak.features.fulltext import RiakSearch2
-from link.feature import addfeatures
-from link.riak import CONF_BASE_PATH
+from link.crdt.utils import get_crdt_type_by_py_type
+from link.crdt.core import CRDT
 
-from six import string_types, raise_from
+from link.riak.features.crdt import convert_crdt_from_riak
+from link.riak.features.crdt import convert_crdt_to_riak
+from link.riak.features.fulltext import RiakSearch2
+from link.riak import CONF_BASE_PATH
+from link.feature import addfeatures
+
+from six import raise_from
 import riak
 
 
@@ -29,7 +33,7 @@ import riak
         Parameter(name='sslver', ptype=int)
     )
 )
-@addfeatures([RiakSolrSchema, RiakSearch2])
+@addfeatures([RiakSearch2])
 @register_middleware
 class RiakDriver(Driver):
 
@@ -129,41 +133,24 @@ class RiakDriver(Driver):
 
         return bucket
 
-    def _get_indexes(self, val, prefix=''):
-        pairs = []
-
-        if isinstance(val, int):
-            pairs.append(('{0}_int'.format(prefix), val))
-
-        elif isinstance(val, string_types):
-            pairs.append(('{0}_bin'.format(prefix), val))
-
-        elif isinstance(val, dict):
-            for key in val:
-                pairs += self._get_indexes(
-                    val[key],
-                    '{0}_{1}'.format(prefix, key)
-                )
-
-        elif isinstance(val, list):
-            for i in range(len(val)):
-                item = val[i]
-
-                pairs += self._get_indexes(
-                    item,
-                    '{0}_{1}'.format(prefix, i)
-                )
-
-        return pairs
-
     def _new_object(self, conn, key, val):
-        obj = self._get_bucket(conn).new(key, val)
+        if not isinstance(val, CRDT):
+            crdt_type = get_crdt_type_by_py_type(type(val))
 
-        if self.indexing:
-            for indexkey, indexval in self._get_indexes(val):
-                obj.add_index(indexkey, indexval)
+            if crdt_type is None:
+                obj = self._get_bucket(conn).new(key, val)
+                return obj
 
-        return obj
+            else:
+                crdt = crdt_type(value=val)
+
+        else:
+            crdt = val
+
+        riak_crdt = convert_crdt_to_riak(crdt)
+        riak_crdt.bucket = self._get_bucket(conn)
+        riak_crdt.key = key
+        riak_crdt.update()
 
     def _get(self, conn, key):
         obj = self._get_bucket(conn).get(key)
@@ -185,20 +172,7 @@ class RiakDriver(Driver):
                 datas.append(result.data)
 
             elif isinstance(result, riak.datatypes.Datatype):
-                doc = {}
-
-                for subkey, type_subkey in result.value:
-                    dockey = '{0}_{1}'.format(subkey, type_subkey)
-                    val = result.value[(subkey, type_subkey)]
-
-                    if isinstance(val, frozenset):
-                        val = list(val)
-
-                    else:
-                        val = str(val)
-
-                    doc[dockey] = val
-
+                doc = convert_crdt_from_riak(result)
                 datas.append(doc)
 
             else:
@@ -213,13 +187,19 @@ class RiakDriver(Driver):
 
     def _put(self, conn, key, val):
         obj = self._new_object(conn, key, val)
-        obj.store()
+
+        if obj is not None:
+            obj.store()
 
     def _multiput(self, conn, keys, vals):
-        objs = [
-            self._new_object(conn, k, v)
-            for k, v in zip(keys, vals)
-        ]
+        objs = list(filter(
+            lambda obj: obj is not None,
+            [
+                self._new_object(conn, k, v)
+                for k, v in zip(keys, vals)
+            ]
+        ))
+
         conn.multiput(objs)
 
     def _remove(self, conn, key):
@@ -227,10 +207,6 @@ class RiakDriver(Driver):
 
         if not obj.exists:
             raise KeyError('No such key: {0}'.format(key))
-
-        if self.indexing:
-            for indexkey, indexval in self._get_indexes(obj.data):
-                obj.remove_index(indexkey, indexval)
 
         obj.delete()
 
