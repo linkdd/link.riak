@@ -18,14 +18,14 @@ REQUIREMENTS = [
     'link.crdt>=0.7',
     'link.feature>=2.1',
     'link.middleware>=1.5',
-    'link.kvstore>=0.11',
+    'link.kvstore>=0.12',
     'link.fulltext>=0.6',
     'six>=1.10.0',
     'riak>=2.5.5'
 ]
 
 CLASSIFIERS = [
-    'Development Status :: 3 - Alpha',
+    'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Topic :: Utilities',

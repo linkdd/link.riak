@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from riak.datatypes.datatype import TYPES as RIAK_TYPES
-from link.crdt.utils import TYPES as LINK_TYPES
+from link.crdt.map import TYPES as LINK_TYPES
 
 
 class CRDTConverter(object):
@@ -74,7 +74,12 @@ class CRDTConverter(object):
 
             updates[(key, datatype)] = subval
 
-        obj._removes = crdt._removes
+        obj._removes = []
+
+        for key in crdt._removes:
+            key, datatype = key.rsplit('_', 1)
+            obj._removes.append((key, datatype))
+
         obj._updates = updates
 
         return obj
@@ -106,12 +111,16 @@ class CRDTConverter(object):
 
             updates[key] = subval
 
-        obj._removes = crdt._removes
+        obj._removes = [
+            '{0}_{1}'.format(key, datatype)
+            for key, datatype in crdt._removes
+        ]
+
         obj._updates = updates
 
         return obj
 
-    def to_riak(self, crdt):
+    def to_riak(self, crdt, context=None):
         typemap = {
             'counter': self.to_counter,
             'flag': self.to_flag,
@@ -120,9 +129,9 @@ class CRDTConverter(object):
             'map': self.to_map
         }
 
-        return typemap[crdt._type_name](crdt)
+        return typemap[crdt._type_name](crdt, context=context)
 
-    def from_riak(self, crdt):
+    def from_riak(self, crdt, context=None):
         typemap = {
             'counter': self.from_counter,
             'flag': self.from_flag,
@@ -131,7 +140,7 @@ class CRDTConverter(object):
             'map': self.from_map
         }
 
-        return typemap[crdt.type_name](crdt)
+        return typemap[crdt.type_name](crdt, context=context)
 
 
 def convert_crdt_to_riak(crdt):

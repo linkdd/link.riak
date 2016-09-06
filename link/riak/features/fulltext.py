@@ -8,8 +8,8 @@ class RiakSearch2(FulltextIndex):
     DATA_ID = '_yz_rk'
 
     def search(self, query):
-        result = self.middleware.conn.fulltext_search(
-            self.middleware.path[0],
+        result = self.obj.conn.fulltext_search(
+            self.obj.path[0],
             query
         )
 
