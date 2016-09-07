@@ -9,6 +9,7 @@ import json
 
 def create_bucket_type(btype):
     return call([
+        'sudo',
         'riak-admin',
         'bucket-type',
         'create',
