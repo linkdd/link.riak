@@ -8,14 +8,24 @@ import json
 
 
 def create_bucket_type(btype):
-    return call([
+    bucket_name = '{0}s'.format(btype)
+    ret = call([
         'sudo',
         'riak-admin',
         'bucket-type',
         'create',
-        '{0}s'.format(btype),
+        bucket_name,
         json.dumps({'props': {'datatype': btype}})
     ])
+
+    if ret == 0:
+        return call([
+            'sudo',
+            'riak-admin',
+            'bucket-type',
+            'activate',
+            bucket_name
+        ])
 
 
 @step(r'I create a key "([^"]*)" with a counter starting at (\d*)')
