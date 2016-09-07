@@ -1,3 +1,3 @@
 #!/bin/bash
 
-aloe features/driver/scenarios.feature
+aloe features/driver/scenarios.feature || exit 1

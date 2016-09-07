@@ -1,4 +1,5 @@
 language: python
+sudo: required
 services:
   - riak
 python:
@@ -12,6 +13,6 @@ install:
   - python setup.py install
 script:
   - coverage run setup.py test
-  - (cd functional-tests; ./run.sh)
+  - (cd functional-tests; sudo ./run.sh)
 after_success:
   - coveralls
