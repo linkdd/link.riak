@@ -5,7 +5,6 @@ from b3j0f.conf import Configurable, category, Parameter
 from link.middleware.core import register_middleware
 from link.kvstore.driver import Driver
 
-from link.crdt.utils import get_crdt_type_by_py_type
 from link.crdt.core import CRDT
 
 from link.riak.features.crdt import convert_crdt_from_riak

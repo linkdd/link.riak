@@ -1,14 +1,17 @@
 language: python
+services:
+  - riak
 python:
   - "2.7"
   - "3.4"
   - "3.5"
 before_install:
-  - pip install --upgrade pip setuptools
+  - pip install --upgrade pip setuptools aloe
 install:
   - pip install coveralls
   - python setup.py install
 script:
   - coverage run setup.py test
+  - (cd functional-tests; ./run.sh)
 after_success:
   - coveralls
