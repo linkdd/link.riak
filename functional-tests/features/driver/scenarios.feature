@@ -15,8 +15,8 @@ Feature: KeyValueStore
         And I disconnect from the store
 
     Scenario: CRDT Counter
-        When I connect to "kvstore+riak://localhost:8087/counters/testbucket?protocol=pbc"
-        And I make sure it can store counters
+        When I make sure it can store counters
+        And I connect to "kvstore+riak://localhost:8087/counters/testbucket?protocol=pbc"
         And I create a key "foo" with a counter starting at 5
         And I increment the counter "foo" by 6
         Then I have a counter "foo" starting at 11
