@@ -1,6 +1,6 @@
 b3j0f.conf==0.3.19
 b3j0f.utils==1.4.3
-link.crdt==0.8
+link.crdt==0.9
 link.feature==2.1
 link.middleware==1.5
 link.kvstore==0.12

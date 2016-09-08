@@ -23,7 +23,7 @@ class CRDTConverter(object):
 
     def to_flag(self, crdt, context=None):
         obj = self.new_riak_crdt(crdt, crdt._value, context=context)
-        obj._op = crdt._mutation
+        obj._op = str(crdt._mutation)
         return obj
 
     def from_flag(self, crdt, context=None):
@@ -33,8 +33,8 @@ class CRDTConverter(object):
 
     def to_set(self, crdt, context=None):
         obj = self.new_riak_crdt(crdt, crdt._value, context=context)
-        obj._adds = crdt._adds
-        obj._removes = crdt._removes
+        obj._adds = set(map(str, crdt._adds))
+        obj._removes = set(map(str, crdt._removes))
         return obj
 
     def from_set(self, crdt, context=None):
@@ -45,7 +45,7 @@ class CRDTConverter(object):
 
     def to_register(self, crdt, context=None):
         obj = self.new_riak_crdt(crdt, crdt._value, context=context)
-        obj._new_value = crdt._new
+        obj._new_value = str(crdt._new)
         return obj
 
     def from_register(self, crdt, context=None):
@@ -60,7 +60,7 @@ class CRDTConverter(object):
 
         for key in crdt._value:
             subval = self.to_riak(crdt._value[key], context=obj)
-            key, datatype = key.rsplit('_', 1)
+            key, datatype = str(key).rsplit('_', 1)
 
             val[(key, datatype)] = subval
 
@@ -70,14 +70,14 @@ class CRDTConverter(object):
 
         for key in crdt._updates:
             subval = self.to_riak(crdt._updates[key], context=obj)
-            key, datatype = key.rsplit('_', 1)
+            key, datatype = str(key).rsplit('_', 1)
 
             updates[(key, datatype)] = subval
 
         obj._removes = []
 
         for key in crdt._removes:
-            key, datatype = key.rsplit('_', 1)
+            key, datatype = str(key).rsplit('_', 1)
             obj._removes.append((key, datatype))
 
         obj._updates = updates

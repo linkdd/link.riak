@@ -15,9 +15,19 @@ Feature: KeyValueStore
         And I disconnect from the store
 
     Scenario: CRDT Counter
-        When I make sure it can store counters
+        When I make sure riak can store counters
         And I connect to "kvstore+riak://localhost:8087/counters/testbucket?protocol=pbc"
-        And I create a key "foo" with a counter starting at 5
+        And I create a counter "foo" starting at 5
         And I increment the counter "foo" by 6
         Then I have a counter "foo" starting at 11
+        And I disconnect from the store
+
+    Scenario: CRDT Set
+        When I make sure riak can store sets
+        And I connect to "kvstore+riak://localhost:8087/sets/testbucket?protocol=pbc"
+        And I create a set "foo" containing "bar" and "baz"
+        And I add "biz" to the set "foo"
+        Then I have a set "foo" containing "bar" and "baz" and "biz"
+        When I discard "bar" from the set "foo"
+        Then I have a set "foo" containing "baz" and "biz"
         And I disconnect from the store
