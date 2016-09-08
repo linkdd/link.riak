@@ -149,6 +149,8 @@ class RiakDriver(Driver):
         riak_crdt.update()
 
     def _get(self, conn, key):
+        key = str(key)
+
         obj = self._get_bucket(conn).get(key)
 
         if isinstance(obj, RiakObject):
@@ -164,6 +166,7 @@ class RiakDriver(Driver):
             raise KeyError('No such key: {0}'.format(key))
 
     def _multiget(self, conn, keys):
+        keys = map(str, keys)
         bucket = self._get_bucket(conn)
 
         results = bucket.multiget(keys)
@@ -189,12 +192,14 @@ class RiakDriver(Driver):
         return datas
 
     def _put(self, conn, key, val):
+        key = str(key)
         obj = self._new_object(conn, key, val)
 
         if obj is not None:
             obj.store()
 
     def _multiput(self, conn, keys, vals):
+        keys = map(str, keys)
         objs = list(filter(
             lambda obj: obj is not None,
             [
@@ -206,6 +211,7 @@ class RiakDriver(Driver):
         conn.multiput(objs)
 
     def _remove(self, conn, key):
+        key = str(key)
         obj = self._get_bucket(conn).get(key)
 
         if not obj.exists:
@@ -214,6 +220,7 @@ class RiakDriver(Driver):
         obj.delete()
 
     def _exists(self, conn, key):
+        key = str(key)
         obj = self._get_bucket(conn).get(key)
         return obj.exists
 
