@@ -166,7 +166,7 @@ class RiakDriver(Driver):
             raise KeyError('No such key: {0}'.format(key))
 
     def _multiget(self, conn, keys):
-        keys = map(str, keys)
+        keys = list(map(str, keys))
         bucket = self._get_bucket(conn)
 
         results = bucket.multiget(keys)
@@ -199,7 +199,7 @@ class RiakDriver(Driver):
             obj.store()
 
     def _multiput(self, conn, keys, vals):
-        keys = map(str, keys)
+        keys = list(map(str, keys))
         objs = list(filter(
             lambda obj: obj is not None,
             [
