@@ -47,7 +47,7 @@ def update_counter(step, key, val):
     world.store[key] = counter
 
 
-@step(r'I have a counter "([^"]*)" starting at (\d*)"')
+@step(r'I have a counter "([^"]*)" starting at (\d*)')
 def read_counter(step, key, val):
     counter = world.store[key]
     assert counter.current == int(val)
