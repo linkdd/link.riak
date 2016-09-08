@@ -124,11 +124,14 @@ class RiakDriver(Driver):
             bucket = conn.bucket(self.default_bucket)
 
         elif len(self.path) == 1:
-            bucket = conn.bucket(self.path[0])
+            bucket = conn.bucket(str(self.path[0]))
 
         else:
-            bucket_type = conn.bucket_type(self.path[0])
-            bucket = bucket_type.bucket('_'.join(self.path[1:]))
+            bucket_type = conn.bucket_type(str(self.path[0]))
+            bucket = bucket_type.bucket('_'.join([
+                str(p)
+                for p in self.path[1:]
+            ]))
 
         return bucket
 
