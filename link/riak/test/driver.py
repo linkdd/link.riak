@@ -175,6 +175,7 @@ class TestDriver(UTCase):
 
     def test_get(self):
         obj = MagicMock()
+        obj.__class__ = RiakObject
         obj.exists = True
         obj.data = 'expected'
 
@@ -190,8 +191,27 @@ class TestDriver(UTCase):
         self.assertEqual(result, 'expected')
         bucket.get.assert_called_with('key')
 
+    def test_get_crdt(self):
+        obj = RiakMap(value={
+            ('a', 'counter'): 1
+        })
+
+        bucket = MagicMock()
+        bucket.get.return_value = obj
+        self.conn.bucket.return_value = bucket
+
+        self._instanciate()
+        self.drv.connect()
+
+        result = self.drv._get(self.drv.conn, 'key')
+
+        self.assertIsInstance(result, Map)
+        self.assertEqual(result.current, {'a_counter': 1})
+        bucket.get.assert_called_with('key')
+
     def test_get_fail(self):
         obj = MagicMock()
+        obj.__class__ = RiakObject
         obj.exists = False
 
         bucket = MagicMock()
@@ -200,6 +220,14 @@ class TestDriver(UTCase):
 
         self._instanciate()
         self.drv.connect()
+
+        with self.assertRaises(KeyError):
+            self.drv._get(self.drv.conn, 'key')
+
+        bucket.get.assert_called_with('key')
+
+        obj = MagicMock()
+        bucket.get.return_value = obj
 
         with self.assertRaises(KeyError):
             self.drv._get(self.drv.conn, 'key')

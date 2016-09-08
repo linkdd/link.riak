@@ -148,10 +148,17 @@ class RiakDriver(Driver):
     def _get(self, conn, key):
         obj = self._get_bucket(conn).get(key)
 
-        if not obj.exists:
-            raise KeyError('No such key: {0}'.format(key))
+        if isinstance(obj, RiakObject):
+            if not obj.exists:
+                raise KeyError('No such key: {0}'.format(key))
 
-        return obj.data
+            return obj.data
+
+        elif isinstance(obj, Datatype):
+            return convert_crdt_from_riak(obj)
+
+        else:
+            raise KeyError('No such key: {0}'.format(key))
 
     def _multiget(self, conn, keys):
         bucket = self._get_bucket(conn)
