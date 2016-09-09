@@ -23,7 +23,7 @@ class CRDTConverter(object):
 
     def to_flag(self, crdt, context=None):
         obj = self.new_riak_crdt(crdt, crdt._value, context=context)
-        obj._op = str(crdt._mutation)
+        obj._op = str(crdt._mutation) if crdt._mutation is not None else None
         return obj
 
     def from_flag(self, crdt, context=None):
@@ -45,7 +45,7 @@ class CRDTConverter(object):
 
     def to_register(self, crdt, context=None):
         obj = self.new_riak_crdt(crdt, crdt._value, context=context)
-        obj._new_value = str(crdt._new)
+        obj._new_value = str(crdt._new) if crdt._new is not None else None
         return obj
 
     def from_register(self, crdt, context=None):

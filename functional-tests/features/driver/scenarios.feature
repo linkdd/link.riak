@@ -31,3 +31,18 @@ Feature: KeyValueStore
         When I discard "bar" from the set "foo"
         Then I have a set "foo" containing "baz" and "biz"
         And I disconnect from the store
+
+    Scenario: CRDT Map
+        When I make sure riak can store maps
+        And I connect to "kvstore+riak://localhost:8087/maps/testbucket?protocol=pbc"
+        And I create a map "foo" containing a flag "f" enabled by default
+        And I increment a counter "c" by 5 in the map "foo"
+        And I set a register "r" to "hello world" in the map "foo"
+        And I add to a set "s" in the map "foo":
+            | Value |
+            | foo   |
+            | bar   |
+            | baz   |
+        And I add to a map "m" a counter "c" incremented by 6 in the map "foo"
+        Then I have a map "foo" which match the value in "features/driver/crdt.map.json"
+        And I disconnect from the store

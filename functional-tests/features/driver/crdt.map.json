@@ -1,0 +1,9 @@
+{
+    "f_flag": true,
+    "c_counter": 5,
+    "r_register": "hello world",
+    "s_set": ["foo", "bar", "baz"],
+    "m_map": {
+        "c_counter": 6
+    }
+}
