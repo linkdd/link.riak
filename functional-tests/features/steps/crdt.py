@@ -8,37 +8,31 @@ from link.crdt.set import Set
 from link.crdt.map import Map
 from subprocess import call
 import json
-import os
 
 
 def create_bucket_type(btype):
-    with open(os.devnull, 'w') as f:
-        bucket_name = '{0}s'.format(btype)
-        ret = call(
+    bucket_name = '{0}s'.format(btype)
+    ret = call(
+        [
+            'sudo',
+            'riak-admin',
+            'bucket-type',
+            'create',
+            bucket_name,
+            json.dumps({'props': {'datatype': btype}})
+        ]
+    )
+
+    if ret == 0:
+        return call(
             [
                 'sudo',
                 'riak-admin',
                 'bucket-type',
-                'create',
-                bucket_name,
-                json.dumps({'props': {'datatype': btype}})
-            ],
-            stdout=f,
-            stderr=f
+                'activate',
+                bucket_name
+            ]
         )
-
-        if ret == 0:
-            return call(
-                [
-                    'sudo',
-                    'riak-admin',
-                    'bucket-type',
-                    'activate',
-                    bucket_name
-                ],
-                stdout=f,
-                stderr=f
-            )
 
 
 @step(r'I make sure riak can store counters')

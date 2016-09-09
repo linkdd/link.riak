@@ -6,39 +6,33 @@ from aloe import step, world
 from link.feature import getfeature
 from subprocess import call
 import json
-import os
 
 
 @step(r'I can index riak with the schema "([^"]*)"')
 def create_index(step, schema):
     ret = 0
 
-    with open(os.devnull, 'w') as f:
+    ret = call(
+        [
+            'sudo',
+            'riak-admin',
+            'bucket-type',
+            'create',
+            'fulltext',
+            json.dumps({'props': {}})
+        ]
+    )
+
+    if ret == 0:
         ret = call(
             [
                 'sudo',
                 'riak-admin',
                 'bucket-type',
-                'create',
-                'fulltext',
-                json.dumps({'props': {}})
-            ],
-            stdout=f,
-            stderr=f
+                'activate',
+                'fulltext'
+            ]
         )
-
-        if ret == 0:
-            ret = call(
-                [
-                    'sudo',
-                    'riak-admin',
-                    'bucket-type',
-                    'activate',
-                    'fulltext'
-                ],
-                stdout=f,
-                stderr=f
-            )
 
     assert ret == 0
 
@@ -50,19 +44,16 @@ def create_index(step, schema):
 
     riakclient.create_search_index('fulltext', 'fulltext')
 
-    with open(os.devnull, 'w') as f:
-        ret = call(
-            [
-                'sudo',
-                'riak-admin',
-                'bucket-type',
-                'update',
-                'fulltext',
-                json.dumps({'props': {'search_index': 'fulltext'}})
-            ],
-            stdout=f,
-            stderr=f
-        )
+    ret = call(
+        [
+            'sudo',
+            'riak-admin',
+            'bucket-type',
+            'update',
+            'fulltext',
+            json.dumps({'props': {'search_index': 'fulltext'}})
+        ]
+    )
 
     assert ret == 0
 
