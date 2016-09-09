@@ -9,7 +9,7 @@ class RiakSearch2(FulltextIndex):
 
     def search(self, query):
         result = self.obj.conn.fulltext_search(
-            self.obj.path[0],
+            str(self.obj.path[0]),
             query
         )
 

@@ -8,7 +8,6 @@ from link.crdt.set import Set
 from link.crdt.map import Map
 from subprocess import call
 import json
-import sys
 import os
 
 

@@ -15,17 +15,17 @@ LICENSE = 'MIT'
 REQUIREMENTS = [
     'b3j0f.conf>=0.3.19',
     'b3j0f.utils>=1.4.3',
-    'link.crdt>=0.9',
+    'link.crdt>=1.0',
     'link.feature>=2.1',
     'link.middleware>=1.5',
-    'link.kvstore>=0.12',
+    'link.kvstore>=1.0',
     'link.fulltext>=0.6',
     'six>=1.10.0',
     'riak>=2.5.5'
 ]
 
 CLASSIFIERS = [
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Topic :: Utilities',
