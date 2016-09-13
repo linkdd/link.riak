@@ -47,15 +47,18 @@ def create_index(step, schema):
     riakclient.create_search_index('fulltext', 'fulltext')
 
     # make sure the index is created
-    sleep(5)
+    timeout = 30
 
-    try:
-        index = riakclient.get_search_index('fulltext')
+    while timeout:
+        try:
+            riakclient.get_search_index('fulltext')
 
-    except RiakError:
-        index = {'name': None}
+        except RiakError:
+            timeout -= 1
+            sleep(1)
 
-    assert index['name'] == 'fulltext'
+        else:
+            break
 
     ret = call(
         [
