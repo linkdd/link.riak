@@ -44,6 +44,10 @@ def create_index(step, schema):
 
     riakclient.create_search_index('fulltext', 'fulltext')
 
+    # reconnect to make sure the index is created
+    riakmiddleware.disconnect()
+    riakmiddleware.connect()
+
     ret = call(
         [
             'sudo',
