@@ -6,6 +6,7 @@ from aloe import step, world
 from link.feature import getfeature
 from subprocess import call
 from riak import RiakError
+from time import sleep
 import json
 
 
@@ -44,6 +45,9 @@ def create_index(step, schema):
         riakclient.create_search_schema('fulltext', f.read())
 
     riakclient.create_search_index('fulltext', 'fulltext')
+
+    # make sure the index is created
+    sleep(5)
 
     try:
         index = riakclient.get_search_index('fulltext')
