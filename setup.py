@@ -19,7 +19,7 @@ REQUIREMENTS = [
     'link.feature>=2.1',
     'link.middleware>=1.5',
     'link.kvstore>=1.0',
-    'link.fulltext>=0.6',
+    'link.fulltext>=0.9',
     'six>=1.10.0',
     'riak>=2.5.5'
 ]
